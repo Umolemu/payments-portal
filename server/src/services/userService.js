@@ -1,5 +1,5 @@
 import { users, addUser, findUserByEmail } from "../db/usersDb.js";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { saltRounds } from "../constants/constants.js";
 
 // Strip sensitive fields
