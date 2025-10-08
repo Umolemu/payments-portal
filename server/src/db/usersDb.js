@@ -1,10 +1,15 @@
-// In-memory user store (mock DB). Replace later with a real database.
+import bcrypt from "bcryptjs";
+
+const testPassword = "password123";
+const hashedPassword = bcrypt.hashSync(testPassword, saltRounds);
+
 export const users = [
   {
     id: 1,
     name: "Alice Johnson",
     email: "alice@example.com",
     role: "admin",
+    password: hashedPassword,
     createdAt: new Date().toISOString(),
   },
   {
@@ -12,13 +17,15 @@ export const users = [
     name: "Bob Smith",
     email: "bob@example.com",
     role: "user",
+    password: hashedPassword,
     createdAt: new Date().toISOString(),
   },
   {
     id: 3,
     name: "Carol Martinez",
     email: "carol@example.com",
-    role: "auditor",
+    password: hashedPassword,
+    role: "user",
     createdAt: new Date().toISOString(),
   },
 ];
