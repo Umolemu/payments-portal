@@ -1,4 +1,5 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
+import { saltRounds } from "../constants/constants.js";
 
 const testPassword = "password123";
 const hashedPassword = bcrypt.hashSync(testPassword, saltRounds);
