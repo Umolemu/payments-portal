@@ -1,3 +1,4 @@
+// In-memory user store (mock DB). Replace later with a real database.
 export const users = [
   {
     id: 1,
@@ -22,9 +23,32 @@ export const users = [
   },
 ];
 
-export var nextId = users.length + 1;
+let nextId = users.length + 1;
+
+export function addUser({ name, email, role = "user", password }) {
+  const user = {
+    id: nextId++,
+    name,
+    email,
+    role,
+    password,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(user);
+  return user;
+}
+
+export function findUserByEmail(email) {
+  return users.find(
+    (u) => u.email.toLowerCase() === String(email).toLowerCase().trim()
+  );
+}
 
 export function resetUsers() {
   users.splice(0, users.length);
   nextId = 1;
+}
+
+export function _getNextIdUnsafe() {
+  return nextId;
 }

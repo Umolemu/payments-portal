@@ -1,37 +1,42 @@
-import { users, nextId } from "../db/usersDb.js";
+import { users, addUser, findUserByEmail } from "../db/usersDb.js";
 import bcrypt from "bcryptjs";
 import { saltRounds } from "../constants/constants.js";
 
+// Strip sensitive fields
+function toPublic(user) {
+  if (!user) return null;
+  const { password, ...rest } = user;
+  return rest;
+}
+
 export async function getAllUsers() {
-  return Promise.resolve(users);
+  return users.map(toPublic);
 }
 
 export async function getUserByEmail(email) {
-  return users.find((user) => user.email.toLowerCase() === email.toLowerCase());
+  return toPublic(findUserByEmail(email));
 }
 
-export async function createUser({ name, email, password }) {
-  const existing = users.find(
-    (user) => user.email.toLowerCase() === email.toLowerCase()
-  );
+export async function createUser({ name, email, password, role }) {
+  const existing = findUserByEmail(email);
+
   if (existing) {
     throw new Error("Email already exists");
   }
 
-  // Hash password
   const hashed = await bcrypt.hash(password, saltRounds);
+  const saved = addUser({ name, email, role, password: hashed });
 
-  const user = {
-    id: nextId++,
-    name,
-    email,
-    password: hashed,
-    createdAt: new Date().toISOString(),
-  };
+  return toPublic(saved);
+}
 
-  users.push(user);
+export async function verifyUserCredentials(email, plainPassword) {
+  const raw = findUserByEmail(email);
 
-  // Return a copy without the password hash
-  const { password: _omit, ...safeUser } = user;
-  return safeUser;
+  if (!raw) {
+    return null;
+  }
+
+  const match = await bcrypt.compare(plainPassword, raw.password);
+  return match ? toPublic(raw) : null;
 }

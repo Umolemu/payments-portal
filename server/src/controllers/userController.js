@@ -2,6 +2,7 @@ import {
   getAllUsers,
   getUserByEmail,
   createUser,
+  verifyUserCredentials,
 } from "../services/userService.js";
 
 export async function getUsersController(req, res) {
@@ -26,7 +27,7 @@ export async function getUserController(req, res) {
 
 export async function createUserController(req, res) {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
       return res
@@ -34,7 +35,7 @@ export async function createUserController(req, res) {
         .json({ error: "name, email and password are required" });
     }
 
-    const user = await createUser({ name, email, password });
+    const user = await createUser({ name, email, password, role });
 
     res.status(201).json(user);
   } catch (error) {
@@ -42,5 +43,21 @@ export async function createUserController(req, res) {
       return res.status(409).json({ error: error.message });
     }
     res.status(500).json({ error: "Failed to create user" });
+  }
+}
+
+export async function loginController(req, res) {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "email and password are required" });
+    }
+    const user = await verifyUserCredentials(email, password);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to verify user" });
   }
 }
