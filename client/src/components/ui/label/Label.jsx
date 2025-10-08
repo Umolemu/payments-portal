@@ -1,0 +1,20 @@
+import React from "react";
+import clsx from "clsx";
+
+export const Label = React.forwardRef(function Label(
+  { className, ...props },
+  ref
+) {
+  return (
+    <label
+      ref={ref}
+      className={clsx(
+        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        className
+      )}
+      {...props}
+    />
+  );
+});
+
+export default Label;
