@@ -10,8 +10,6 @@ const JWT_SECRET = process.env.JWT_SECRET || "replace-with-env-secret";
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || "15m";
 
 //User Controllers
-
-
 export async function getUsersController(req, res) {
   try {
     const list = await getAllUsers();
@@ -55,14 +53,11 @@ export async function createUserController(req, res) {
 }
 
 //Login Controller
-
 export async function loginController(req, res) {
   try {
     const { email, password } = req.body;
     if (!email || !password)
-      return res
-        .status(400)
-        .json({ error: "email and password are required" });
+      return res.status(400).json({ error: "email and password are required" });
 
     const user = await verifyUserCredentials(email, password);
     if (!user)
