@@ -1,40 +1,48 @@
-import jwt from "jsonwebtoken";
 import {
   getAllUsers,
   getUserByEmail,
   createUser,
   verifyUserCredentials,
 } from "../services/userService.js";
+import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
+import type { Request, Response } from "express";
 
-const JWT_SECRET = process.env.JWT_SECRET || "replace-with-env-secret";
-const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || "15m";
+const JWT_SECRET: Secret = process.env.JWT_SECRET || "replace-with-env-secret";
+const ACCESS_TOKEN_EXPIRES_IN: Exclude<SignOptions["expiresIn"], undefined> =
+  (process.env.ACCESS_TOKEN_EXPIRES_IN as Exclude<
+    SignOptions["expiresIn"],
+    undefined
+  >) ?? "15m";
 
 //User Controllers
-export async function getUsersController(req, res) {
+export async function getUsersController(req: Request, res: Response) {
   try {
     const list = await getAllUsers();
     res.json(list);
-  } catch (error) {
-    console.error(error);
+  } catch (err: unknown) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 }
 
-export async function getUserController(req, res) {
+export async function getUserController(req: Request, res: Response) {
   try {
-    const { email } = req.params;
-    const user = await getUserByEmail(email);
+    const { email } = req.params as { email?: string };
+    if (!email)
+      return res.status(400).json({ error: "email param is required" });
+    const user = await getUserByEmail(String(email));
     if (!user) return res.status(404).json({ error: "User not found" });
     res.json(user);
-  } catch (error) {
-    console.error(error);
+  } catch (err: unknown) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch user" });
   }
 }
 
-export async function createUserController(req, res) {
+export async function createUserController(req: Request, res: Response) {
   try {
     const { name, email, password, role } = req.body;
+
     if (!name || !email || !password) {
       return res
         .status(400)
@@ -43,17 +51,20 @@ export async function createUserController(req, res) {
 
     const user = await createUser({ name, email, password, role });
     res.status(201).json(user);
-  } catch (error) {
-    console.error(error);
-    if (error.message.includes("exists")) {
-      return res.status(409).json({ error: error.message });
+  } catch (err: unknown) {
+    console.error(err);
+
+    const message = err instanceof Error ? err.message : "Unknown error";
+    if (message.includes("exists")) {
+      return res.status(409).json({ error: message });
     }
+
     res.status(500).json({ error: "Failed to create user" });
   }
 }
 
 //Login Controller
-export async function loginController(req, res) {
+export async function loginController(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
     if (!email || !password)
@@ -71,9 +82,8 @@ export async function loginController(req, res) {
     };
 
     // Sign the token
-    const token = jwt.sign(payload, JWT_SECRET, {
-      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
-    });
+    const signOptions: SignOptions = { expiresIn: ACCESS_TOKEN_EXPIRES_IN };
+    const token = jwt.sign(payload, JWT_SECRET, signOptions);
 
     // Set the token in an httpOnly, secure cookie (protects against XSS)
     res.cookie("accessToken", token, {
@@ -83,14 +93,14 @@ export async function loginController(req, res) {
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
-    // Respond with success (user details but not password)
-    const { password: _, ...safeUser } = user;
+    // Respond with success (ProtectedUser already excludes password)
+    const safeUser = user;
     res.json({
       message: "Login successful",
       user: safeUser,
     });
-  } catch (error) {
-    console.error(error);
+  } catch (err: unknown) {
+    console.error(err);
     res.status(500).json({ error: "Failed to verify user" });
   }
 }

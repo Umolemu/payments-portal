@@ -14,13 +14,15 @@ const userRoutes = Router();
 userRoutes.get("/", getUsersController);
 
 // validate that :email is a valid email
-userRoutes.get("/:email",
+userRoutes.get(
+  "/:email",
   param("email").isEmail().withMessage("Invalid email"),
   validateRequest,
   getUserController
 );
 
-userRoutes.post("/",
+userRoutes.post(
+  "/",
   body("name").isString().trim().isLength({ min: 2 }),
   body("email").isEmail(),
   body("password").isLength({ min: 8 }),
@@ -30,7 +32,8 @@ userRoutes.post("/",
 );
 
 // Login / credential verification
-userRoutes.post("/login",
+userRoutes.post(
+  "/login",
   body("email").isEmail(),
   body("password").isLength({ min: 8 }),
   validateRequest,
