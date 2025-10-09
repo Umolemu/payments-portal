@@ -1,4 +1,5 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import {
   getUsersController,
   getUserController,
@@ -32,8 +33,15 @@ userRoutes.post(
 );
 
 // Login / credential verification
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 userRoutes.post(
   "/login",
+  loginLimiter,
   body("email").isEmail(),
   body("password").isLength({ min: 8 }),
   validateRequest,

@@ -86,10 +86,12 @@ export async function loginController(req: Request, res: Response) {
     const token = jwt.sign(payload, JWT_SECRET, signOptions);
 
     // Set the token in an httpOnly, secure cookie (protects against XSS)
-    res.cookie("accessToken", token, {
+    // Use __Host- prefix for strongest cookie scoping (requires Secure, Path=/, no Domain)
+    res.cookie("__Host-accessToken", token, {
       httpOnly: true,
       secure: true, // must use HTTPS
-      sameSite: "lax",
+      sameSite: "lax", // or 'strict' if your flows allow
+      path: "/",
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 

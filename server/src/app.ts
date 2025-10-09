@@ -9,10 +9,13 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { options } from "./utils/serverOptions.js";
 import { sanitize } from "./utils/sanitize.js";
+import { setCsrfToken, verifyCsrf, getCsrfToken } from "./middleware/csrf.js";
 
 dotenv.config();
 
 const app = express();
+// If behind a reverse proxy (e.g., Azure App Service/NGINX), trust proxy so secure cookies are respected
+app.set("trust proxy", 1);
 const allowedOrigin = process.env.FRONTEND_ORIGIN || "https://localhost:3000";
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -25,15 +28,36 @@ const globalLimiter = rateLimit({
 
 app.use(cookieParser());
 app.use(express.json());
-app.use(helmet()); // sets many secure headers,
+app.use(
+  helmet({
+    // Mitigate clickjacking: block all framing
+    frameguard: { action: "deny" },
+    // Strong referrer policy
+    referrerPolicy: { policy: "no-referrer" },
+    // Content Security Policy with frame-ancestors none
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        // Prevent this app from being framed anywhere
+        "frame-ancestors": ["'none'"],
+      },
+    },
+  })
+); // sets many secure headers
 app.use(sanitize); // sanitize user input against XSS
 app.use(express.json({ limit: "10kb" }));
 app.use(globalLimiter);
+// CSRF protections: double-submit cookie (cookie + x-csrf-token header)
+app.use(setCsrfToken);
+app.get("/csrf", getCsrfToken);
+app.use(verifyCsrf);
 app.use(
   cors({
     origin: allowedOrigin,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "x-csrf-token"],
   })
 );
 
