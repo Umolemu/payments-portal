@@ -17,7 +17,7 @@ app.use("/api/users", userRoutes);
 // HTTPS options
 const options = {
   key: fs.readFileSync("keys/privateKey.pem"),
-  cert: fs.readFileSync("keys/certificate.pem"),
+  cert: fs.readFileSync("keys/certifecate.pem"),
 };
 
 // Export function that starts the HTTPS server
