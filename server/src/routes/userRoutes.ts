@@ -9,6 +9,10 @@ import {
 
 import { body, param } from "express-validator";
 import { validateRequest } from "../middleware/validateRequest.js";
+import {
+  registerUserValidators,
+  loginValidators,
+} from "../validations/userValidations.js";
 
 const userRoutes = Router();
 
@@ -24,10 +28,7 @@ userRoutes.get(
 
 userRoutes.post(
   "/",
-  body("name").isString().trim().isLength({ min: 2 }),
-  body("email").isEmail(),
-  body("password").isLength({ min: 8 }),
-  body("role").optional().isString(),
+  ...registerUserValidators,
   validateRequest,
   createUserController
 );
@@ -42,8 +43,7 @@ const loginLimiter = rateLimit({
 userRoutes.post(
   "/login",
   loginLimiter,
-  body("email").isEmail(),
-  body("password").isLength({ min: 8 }),
+  ...loginValidators,
   validateRequest,
   loginController
 );

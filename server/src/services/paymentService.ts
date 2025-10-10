@@ -35,3 +35,19 @@ export function getPayment(id: number) {
   if (!payment) throw new Error("Payment not found");
   return payment;
 }
+
+export function sendPaymentSwift(id: number, userId: number) {
+  const payment = findPaymentById(id);
+  if (!payment) throw new Error("Payment not found");
+  if (payment.userId !== userId) throw new Error("Forbidden");
+  if (payment.provider !== "SWIFT") throw new Error("Unsupported provider");
+
+  const reference = `SWIFT-${payment.id}-${Date.now()}`;
+  return {
+    id: payment.id,
+    provider: payment.provider,
+    status: "sent" as const,
+    reference,
+    sentAt: new Date(),
+  };
+}
