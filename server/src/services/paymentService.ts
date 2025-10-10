@@ -1,4 +1,4 @@
-import { createPayment, findPaymentById } from "../db/paymentsdb.js";
+import { createPayment, findPaymentById } from "../db/paymentsDb.js";
 import type { Payment } from "../types/payment.js";
 
 //regex whitelist (etters, numbers, some punctuation)

@@ -1,4 +1,4 @@
-import { certPath, keyPath } from "./resolve";
+import { certPath, keyPath } from "./resolve.js";
 import fs from "fs";
 import https from "https";
 
