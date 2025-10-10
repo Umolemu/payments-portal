@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import userRoutes from "./routes/userRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -68,6 +69,7 @@ app.get("/", (req, res) => {
 
 // Routes
 app.use("/api/users", userRoutes);
+app.use("/api", paymentRoutes);
 app.use(errorHandler);
 
 export function startServer(PORT: number) {
