@@ -18,12 +18,17 @@ export const sanitize = (
     }
     return val;
   };
-  // mutate shallowly; express.json already parsed these
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (req as any).body = sanitizeValue(req.body);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (req as any).query = sanitizeValue(req.query);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (req as any).params = sanitizeValue(req.params);
+
+  //mutates reassign instead of reassigning it
+  if (req.body && typeof req.body === "object") {
+    Object.assign(req.body, sanitizeValue(req.body));
+  }
+  if (req.query && typeof req.query === "object") {
+    Object.assign(req.query, sanitizeValue(req.query));
+  }
+  if (req.params && typeof req.params === "object") {
+    Object.assign(req.params, sanitizeValue(req.params));
+  }
+
   next();
 };
