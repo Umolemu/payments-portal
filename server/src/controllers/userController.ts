@@ -1,3 +1,4 @@
+import dotenv from "dotenv";
 import {
   getAllUsers,
   getUserByEmail,
@@ -7,7 +8,12 @@ import {
 import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
 import type { Request, Response } from "express";
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET || "replace-with-env-secret";
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined in environment variables");
+};
 const ACCESS_TOKEN_EXPIRES_IN: Exclude<SignOptions["expiresIn"], undefined> =
   (process.env.ACCESS_TOKEN_EXPIRES_IN as Exclude<
     SignOptions["expiresIn"],
@@ -83,7 +89,7 @@ export async function loginController(req: Request, res: Response) {
 
     // Sign the token
     const signOptions: SignOptions = { expiresIn: ACCESS_TOKEN_EXPIRES_IN };
-    const token = jwt.sign(payload, JWT_SECRET, signOptions);
+    const token = jwt.sign(payload, JWT_SECRET as string, signOptions);
 
     // Set the token in an httpOnly, secure cookie (protects against XSS)
     // Use __Host- prefix for strongest cookie scoping (requires Secure, Path=/, no Domain)
