@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { addPayment, getPayment } from "../services/paymentService.js";
 
 export async function createPaymentController(req: Request, res: Response) {

@@ -1,4 +1,4 @@
-import type { Payment } from "../types/payment.js";
+import type { Payment } from "../types/payment.ts";
 
 export const payments: Payment[] = [];
 let nextId = 1;

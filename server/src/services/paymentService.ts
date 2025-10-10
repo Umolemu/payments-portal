@@ -1,7 +1,7 @@
-import { createPayment, findPaymentById } from "../db/paymentsDb.js";
+import { createPayment, findPaymentById } from "../db/paymentsdb.js";
 import type { Payment } from "../types/payment.js";
 
-// Basic regex whitelist (only letters, numbers, some punctuation)
+//regex whitelist (etters, numbers, some punctuation)
 const SAFE_TEXT = /^[a-zA-Z0-9\s.,'-]{1,100}$/;
 
 export function validatePaymentInput(input: Partial<Payment>) {
