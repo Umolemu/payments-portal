@@ -1,5 +1,9 @@
 import type { Request, Response } from "express";
-import { addPayment, getPayment, sendPaymentSwift } from "../services/paymentService.js";
+import {
+  addPayment,
+  getPayment,
+  sendPaymentSwift,
+} from "../services/paymentService.js";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 
 export async function createPaymentController(req: Request, res: Response) {
@@ -9,7 +13,14 @@ export async function createPaymentController(req: Request, res: Response) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { amount, currency, provider, recipientName, recipientAccount, recipientSwift } = req.body;
+    const {
+      amount,
+      currency,
+      provider,
+      recipientName,
+      recipientAccount,
+      recipientSwift,
+    } = req.body;
 
     const payment = addPayment({
       userId,
@@ -37,7 +48,10 @@ export async function getPaymentController(req: Request, res: Response) {
   }
 }
 
-export async function sendPaymentSwiftController(req: AuthRequest, res: Response) {
+export async function sendPaymentSwiftController(
+  req: AuthRequest,
+  res: Response
+) {
   try {
     const userId = (req.user as any)?.id;
     if (!userId) return res.status(401).json({ error: "Unauthorized" });
@@ -46,7 +60,8 @@ export async function sendPaymentSwiftController(req: AuthRequest, res: Response
     res.status(200).json(result);
   } catch (err: any) {
     const msg = err?.message || "Failed to send payment";
-    const code = msg === "Forbidden" ? 403 : msg.includes("not found") ? 404 : 400;
+    const code =
+      msg === "Forbidden" ? 403 : msg.includes("not found") ? 404 : 400;
     res.status(code).json({ error: msg });
   }
 }
