@@ -1,19 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const baseLink = "text-base font-medium transition-colors";
   const inactive = "text-muted-foreground hover:text-foreground";
   const active = "text-foreground";
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still navigate even if logout fails
+      navigate("/");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -52,9 +63,10 @@ export function Navbar() {
             )}
             <button
               onClick={handleLogout}
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-px border border-border hover:bg-muted/60 h-9 px-4 text-sm bg-transparent"
+              disabled={isLoggingOut}
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-px border border-border hover:bg-muted/60 h-9 px-4 text-sm bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Logout
+              {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
           </div>
         </div>

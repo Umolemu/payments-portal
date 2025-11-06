@@ -108,3 +108,32 @@ export const loginUser = async (credentials) => {
   
   return response.json();
 };
+
+// Logout user
+export const logoutUser = async () => {
+  const csrfToken = await getCsrfToken();
+  
+  const response = await fetch(`${API_BASE_URL}/users/logout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-csrf-token': csrfToken,
+    },
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Failed to logout' }));
+    
+    // Handle validation errors array
+    if (errorData.errors && Array.isArray(errorData.errors)) {
+      const errorMessage = errorData.errors.join('. ');
+      throw new Error(errorMessage);
+    }
+    
+    // Handle single error message
+    throw new Error(errorData.error || 'Failed to logout');
+  }
+  
+  return response.json();
+};

@@ -112,3 +112,21 @@ export async function loginController(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to verify user" });
   }
 }
+
+//Logout Controller
+export async function logoutController(req: Request, res: Response) {
+  try {
+    // Clear the access token cookie
+    res.clearCookie("__Host-accessToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    res.json({ message: "Logout successful" });
+  } catch (err: unknown) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to logout" });
+  }
+}

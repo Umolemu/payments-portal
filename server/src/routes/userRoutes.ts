@@ -5,6 +5,7 @@ import {
   getUserController,
   createUserController,
   loginController,
+  logoutController,
 } from "../controllers/userController.js";
 
 import { body, param } from "express-validator";
@@ -47,5 +48,8 @@ userRoutes.post(
   validateRequest,
   loginController
 );
+
+// Logout
+userRoutes.post("/logout", logoutController);
 
 export default userRoutes;

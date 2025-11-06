@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getMe } from '@/api';
+import { getMe, logoutUser } from '@/api';
 
 const AuthContext = createContext(null);
 
@@ -30,9 +30,18 @@ export function AuthProvider({ children }) {
     setIsAuthenticated(true);
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      // Call logout API to clear server-side session cookie
+      await logoutUser();
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Continue with client-side logout even if API call fails
+    } finally {
+      // Clear client-side state
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   };
 
   const value = {
