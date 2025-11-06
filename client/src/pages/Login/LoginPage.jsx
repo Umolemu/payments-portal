@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,14 +12,39 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { loginUser } from "@/api";
+import { useAuth } from "@/context/AuthContext";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, password });
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await loginUser({ email, password });
+      
+      login(response.user);
+      navigate("/dashboard");
+
+    } catch (err) {
+      setError(err.message || "Failed to login. Please check your credentials.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,6 +60,11 @@ export function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <Label
                 htmlFor="email"
@@ -77,8 +107,12 @@ export function LoginPage() {
                 className="h-11 bg-background border-input"
               />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-medium">
-              Sign in
+            <Button 
+              type="submit" 
+              className="w-full h-11 text-base font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">

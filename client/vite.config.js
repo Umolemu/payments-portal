@@ -14,4 +14,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://localhost:5001',
+        changeOrigin: true,
+        secure: false, // Allow self-signed certificates
+      },
+      '/csrf': {
+        target: 'https://localhost:5001',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 });

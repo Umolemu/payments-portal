@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,20 +12,44 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { createUser } from "@/api";
 
 export function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     if (password !== confirmPassword) {
-      console.log("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
-    console.log("Signup attempt:", { name, email, password });
+
+    setIsLoading(true);
+
+    try {
+      const response = await createUser({ 
+        name, 
+        email, 
+        password,
+        role: "user" 
+      });
+      console.log("Signup successful:", response);
+      
+      navigate("/");
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,6 +65,11 @@ export function SignupPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <Label
                 htmlFor="name"
@@ -57,6 +86,9 @@ export function SignupPage() {
                 required
                 className="h-11 bg-background border-input"
               />
+              <p className="text-xs text-muted-foreground">
+                2-50 characters. Letters, spaces, hyphens, and apostrophes only.
+              </p>
             </div>
             <div className="space-y-2">
               <Label
@@ -91,6 +123,9 @@ export function SignupPage() {
                 required
                 className="h-11 bg-background border-input"
               />
+              <p className="text-xs text-muted-foreground">
+                Must be 8-64 characters. Use letters, numbers, and common symbols.
+              </p>
             </div>
             <div className="space-y-2">
               <Label
@@ -109,8 +144,12 @@ export function SignupPage() {
                 className="h-11 bg-background border-input"
               />
             </div>
-            <Button type="submit" className="w-full h-11 text-base font-medium">
-              Sign up
+            <Button 
+              type="submit" 
+              className="w-full h-11 text-base font-medium"
+              disabled={isLoading}
+            >
+              {isLoading ? "Creating account..." : "Sign up"}
             </Button>
           </form>
           <div className="mt-6 text-center text-sm text-muted-foreground">
