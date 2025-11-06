@@ -17,6 +17,10 @@ export function findPaymentById(id: number): Payment | undefined {
   return payments.find(p => p.id === id);
 }
 
+export function findPaymentsByUserId(userId: number): Payment[] {
+  return payments.filter(p => p.userId === userId);
+}
+
 export function resetPayments() {
   payments.splice(0, payments.length);
   nextId = 1;

@@ -10,33 +10,52 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getPayments, sendPaymentSwift } from "@/api";
 
 export function Transactions() {
   const [transactions, setTransactions] = useState([]);
   const [sendingId, setSendingId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Load transactions from localStorage
-    const stored = localStorage.getItem("transactions");
-    if (stored) {
-      setTransactions(JSON.parse(stored));
-    }
+    loadTransactions();
   }, []);
+
+  const loadTransactions = async () => {
+    try {
+      setIsLoading(true);
+      const payments = await getPayments();
+      setTransactions(payments);
+      setError("");
+    } catch (err) {
+      console.error("Failed to load payments:", err);
+      setError(err.message || "Failed to load payments");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSendToSwift = async (id) => {
     setSendingId(id);
+    setError("");
 
-    // Simulate SWIFT API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Update transaction status
-    const updatedTransactions = transactions.map((t) =>
-      t.id === id ? { ...t, status: "sent" } : t
-    );
-
-    setTransactions(updatedTransactions);
-    localStorage.setItem("transactions", JSON.stringify(updatedTransactions));
-    setSendingId(null);
+    try {
+      const result = await sendPaymentSwift(id);
+      console.log("Payment sent:", result);
+      
+      // Update transaction status in local state
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, status: "sent", sentAt: result.sentAt } : t
+        )
+      );
+    } catch (err) {
+      console.error("Failed to send payment:", err);
+      setError(err.message || "Failed to send payment");
+    } finally {
+      setSendingId(null);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -47,8 +66,40 @@ export function Transactions() {
         return "bg-green-100 text-green-800 border-green-200";
       case "failed":
         return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="shadow-lg border-border/50">
+        <CardContent className="py-12">
+          <div className="text-center">
+            <p className="text-muted-foreground text-lg">
+              Loading transactions...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="shadow-lg border-border/50">
+        <CardContent className="py-12">
+          <div className="text-center">
+            <p className="text-red-600 text-lg mb-2">Error loading transactions</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button onClick={loadTransactions} className="mt-4">
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (transactions.length === 0) {
     return (
@@ -69,23 +120,28 @@ export function Transactions() {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+          {error}
+        </div>
+      )}
       {transactions.map((transaction) => (
         <Card key={transaction.id} className="shadow-lg border-border/50">
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
               <div>
                 <CardTitle className="text-xl font-serif tracking-tight text-balance">
-                  {transaction.beneficiaryName}
+                  {transaction.recipientName}
                 </CardTitle>
                 <CardDescription className="text-sm text-muted-foreground mt-1">
-                  {new Date(transaction.createdAt).toLocaleString()}
+                  Created: {new Date(transaction.createdAt).toLocaleString()}
                 </CardDescription>
               </div>
               <Badge
                 variant="outline"
-                className={getStatusColor(transaction.status)}
+                className={getStatusColor(transaction.status || "pending")}
               >
-                {transaction.status.toUpperCase()}
+                {(transaction.status || "PENDING").toUpperCase()}
               </Badge>
             </div>
           </CardHeader>
@@ -94,13 +150,13 @@ export function Transactions() {
               <div>
                 <p className="text-muted-foreground mb-1">SWIFT/BIC</p>
                 <p className="font-medium text-foreground">
-                  {transaction.swiftBic}
+                  {transaction.recipientSwift}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground mb-1">IBAN</p>
                 <p className="font-medium text-foreground font-mono text-xs">
-                  {transaction.iban}
+                  {transaction.recipientAccount}
                 </p>
               </div>
               <div>
@@ -112,12 +168,24 @@ export function Transactions() {
               <div>
                 <p className="text-muted-foreground mb-1">Reference</p>
                 <p className="font-medium text-foreground">
-                  {transaction.reference}
+                  {transaction.reference || "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1">Payment ID</p>
+                <p className="font-medium text-foreground">
+                  #{transaction.id}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground mb-1">Provider</p>
+                <p className="font-medium text-foreground">
+                  {transaction.provider}
                 </p>
               </div>
             </div>
 
-            {transaction.status === "pending" && (
+            {(!transaction.status || transaction.status === "pending") && (
               <div className="pt-2">
                 <Button
                   onClick={() => handleSendToSwift(transaction.id)}
@@ -133,10 +201,15 @@ export function Transactions() {
 
             {transaction.status === "sent" && (
               <div className="pt-2">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                  <p className="text-sm font-medium text-green-800">
-                    Successfully sent to SWIFT network
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-green-800 text-center">
+                    ✓ Successfully sent to SWIFT network
                   </p>
+                  {transaction.sentAt && (
+                    <p className="text-xs text-green-600 text-center mt-1">
+                      Sent: {new Date(transaction.sentAt).toLocaleString()}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

@@ -19,47 +19,70 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createPayment } from "@/api";
 
 export function Dashboard() {
   const [formData, setFormData] = useState({
-    beneficiaryName: "",
-    swiftBic: "",
-    iban: "",
+    recipientName: "",
+    recipientSwift: "",
+    recipientAccount: "",
     amount: "",
     currency: "",
     reference: "",
   });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
+
     // Basic validation (currency must be selected)
     if (!formData.currency) {
-      alert("Please select a currency");
+      setError("Please select a currency");
       return;
     }
-    const newTransaction = {
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      status: "pending",
-      ...formData,
-    };
-    const existingRaw = localStorage.getItem("transactions");
-    const existing = existingRaw ? JSON.parse(existingRaw) : [];
-    const updated = [newTransaction, ...existing];
-    localStorage.setItem("transactions", JSON.stringify(updated));
-    console.log("Payment submission saved:", newTransaction);
-    // Optionally reset form
-    setFormData({
-      beneficiaryName: "",
-      swiftBic: "",
-      iban: "",
-      amount: "",
-      currency: "",
-      reference: "",
-    });
-    // Navigate to employee/transactions review page
-    navigate("/employee");
+
+    setIsLoading(true);
+
+    try {
+      const paymentData = {
+        recipientName: formData.recipientName,
+        recipientSwift: formData.recipientSwift.toUpperCase(),
+        recipientAccount: formData.recipientAccount.toUpperCase(),
+        amount: parseFloat(formData.amount),
+        currency: formData.currency,
+        reference: formData.reference,
+      };
+
+      const response = await createPayment(paymentData);
+      console.log("Payment created:", response);
+      
+      setSuccess(`Payment #${response.id} created successfully!`);
+      
+      // Reset form
+      setFormData({
+        recipientName: "",
+        recipientSwift: "",
+        recipientAccount: "",
+        amount: "",
+        currency: "",
+        reference: "",
+      });
+
+      // Navigate to employee/transactions review page after a short delay
+      setTimeout(() => {
+        navigate("/employee");
+      }, 1500);
+    } catch (err) {
+      console.error("Payment error:", err);
+      setError(err.message || "Failed to create payment. Please check your input.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -78,58 +101,79 @@ export function Dashboard() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md">
+              {success}
+            </div>
+          )}
           <div className="space-y-2">
             <Label
-              htmlFor="beneficiaryName"
+              htmlFor="recipientName"
               className="text-sm font-medium text-foreground"
             >
               Beneficiary Name
             </Label>
             <Input
-              id="beneficiaryName"
+              id="recipientName"
               type="text"
               placeholder="Enter beneficiary name"
-              value={formData.beneficiaryName}
-              onChange={(e) => handleChange("beneficiaryName", e.target.value)}
+              value={formData.recipientName}
+              onChange={(e) => handleChange("recipientName", e.target.value)}
               required
               className="h-11 bg-background border-input"
             />
+            <p className="text-xs text-muted-foreground">
+              Letters, spaces, periods, commas, apostrophes, and hyphens only.
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label
-              htmlFor="swiftBic"
+              htmlFor="recipientSwift"
               className="text-sm font-medium text-foreground"
             >
               Beneficiary Bank SWIFT/BIC
             </Label>
             <Input
-              id="swiftBic"
+              id="recipientSwift"
               type="text"
               placeholder="e.g., DEUTDEFF"
-              value={formData.swiftBic}
-              onChange={(e) => handleChange("swiftBic", e.target.value)}
+              value={formData.recipientSwift}
+              onChange={(e) => handleChange("recipientSwift", e.target.value.toUpperCase())}
               required
+              maxLength={11}
               className="h-11 bg-background border-input"
             />
+            <p className="text-xs text-muted-foreground">
+              8 or 11 characters. Example: DEUTDEFF or DEUTDEFFXXX
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label
-              htmlFor="iban"
+              htmlFor="recipientAccount"
               className="text-sm font-medium text-foreground"
             >
               Beneficiary Account (IBAN)
             </Label>
             <Input
-              id="iban"
+              id="recipientAccount"
               type="text"
               placeholder="e.g., DE89370400440532013000"
-              value={formData.iban}
-              onChange={(e) => handleChange("iban", e.target.value)}
+              value={formData.recipientAccount}
+              onChange={(e) => handleChange("recipientAccount", e.target.value.toUpperCase())}
               required
+              maxLength={34}
               className="h-11 bg-background border-input"
             />
+            <p className="text-xs text-muted-foreground">
+              2 letter country code + 2 digits + up to 30 alphanumeric characters.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -150,6 +194,9 @@ export function Dashboard() {
                 required
                 className="h-11 bg-background border-input"
               />
+              <p className="text-xs text-muted-foreground">
+                Minimum: 0.01
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -199,10 +246,17 @@ export function Dashboard() {
               required
               className="h-11 bg-background border-input"
             />
+            <p className="text-xs text-muted-foreground">
+              Letters, numbers, spaces, and common punctuation. Max 100 characters.
+            </p>
           </div>
 
-          <Button type="submit" className="w-full h-11 text-base font-medium">
-            Submit Payment
+          <Button 
+            type="submit" 
+            className="w-full h-11 text-base font-medium"
+            disabled={isLoading}
+          >
+            {isLoading ? "Creating Payment..." : "Submit Payment"}
           </Button>
         </form>
       </CardContent>

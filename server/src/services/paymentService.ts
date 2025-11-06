@@ -1,4 +1,4 @@
-import { createPayment, findPaymentById } from "../db/paymentsDb.js";
+import { createPayment, findPaymentById, findPaymentsByUserId } from "../db/paymentsDb.js";
 import type { Payment } from "../types/payment.js";
 
 //regex whitelist (etters, numbers, some punctuation)
@@ -34,6 +34,10 @@ export function getPayment(id: number) {
   const payment = findPaymentById(id);
   if (!payment) throw new Error("Payment not found");
   return payment;
+}
+
+export function getUserPayments(userId: number) {
+  return findPaymentsByUserId(userId);
 }
 
 export function sendPaymentSwift(id: number, userId: number) {

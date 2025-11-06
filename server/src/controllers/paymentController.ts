@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import {
   addPayment,
   getPayment,
+  getUserPayments,
   sendPaymentSwift,
 } from "../services/paymentService.js";
 import type { AuthRequest } from "../middleware/authMiddleware.js";
@@ -16,23 +17,27 @@ export async function createPaymentController(req: Request, res: Response) {
     const {
       amount,
       currency,
-      provider,
       recipientName,
       recipientAccount,
       recipientSwift,
+      reference,
     } = req.body;
 
     const payment = addPayment({
       userId,
-      amount,
-      currency,
-      provider,
+      amount: parseFloat(amount),
+      currency: currency.toUpperCase(),
+      provider: "SWIFT",
       recipientName,
-      recipientAccount,
-      recipientSwift,
+      recipientAccount: recipientAccount.toUpperCase(),
+      recipientSwift: recipientSwift.toUpperCase(),
     });
 
-    res.status(201).json(payment);
+    res.status(201).json({
+      ...payment,
+      reference, // Include the reference in response
+      message: "Payment created successfully"
+    });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
@@ -45,6 +50,20 @@ export async function getPaymentController(req: Request, res: Response) {
     res.status(200).json(payment);
   } catch (err: any) {
     res.status(404).json({ error: err.message });
+  }
+}
+
+export async function getUserPaymentsController(req: AuthRequest, res: Response) {
+  try {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    
+    const payments = getUserPayments(userId);
+    res.status(200).json(payments);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 }
 

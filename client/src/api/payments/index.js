@@ -15,6 +15,24 @@ const getCsrfToken = async () => {
   return data.csrfToken;
 };
 
+// Get all payments for current user
+export const getPayments = async () => {
+  const response = await fetch(`${API_BASE_URL}/payments`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Failed to fetch payments' }));
+    throw new Error(errorData.error || 'Failed to fetch payments');
+  }
+  
+  return response.json();
+};
+
 // Create a new payment
 export const createPayment = async (paymentData) => {
   const csrfToken = await getCsrfToken();
@@ -30,8 +48,16 @@ export const createPayment = async (paymentData) => {
   });
   
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to create payment' }));
-    throw new Error(error.error || 'Failed to create payment');
+    const errorData = await response.json().catch(() => ({ error: 'Failed to create payment' }));
+    
+    // Handle validation errors array
+    if (errorData.errors && Array.isArray(errorData.errors)) {
+      const errorMessage = errorData.errors.join('. ');
+      throw new Error(errorMessage);
+    }
+    
+    // Handle single error message
+    throw new Error(errorData.error || 'Failed to create payment');
   }
   
   return response.json();
