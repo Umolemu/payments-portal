@@ -1,10 +1,10 @@
-import { createPayment, findPaymentById, findPaymentsByUserId } from "../db/paymentsDb.js";
-import type { Payment } from "../types/payment.js";
+import { PaymentModel } from "../models/paymentmodel.js";
+import type { IPayment } from "../models/paymentmodel.js";
 
-//regex whitelist (etters, numbers, some punctuation)
+// Validation regex (as before)
 const SAFE_TEXT = /^[a-zA-Z0-9\s.,'-]{1,100}$/;
 
-export function validatePaymentInput(input: Partial<Payment>) {
+export function validatePaymentInput(input: Partial<IPayment>) {
   if (typeof input.amount !== "number" || input.amount <= 0) {
     throw new Error("Invalid amount");
   }
@@ -25,30 +25,35 @@ export function validatePaymentInput(input: Partial<Payment>) {
   }
 }
 
-export function addPayment(data: Omit<Payment, "id" | "createdAt">) {
+// --- MongoDB operations ---
+
+export async function addPayment(data: Omit<IPayment, "id" | "createdAt">) {
   validatePaymentInput(data);
-  return createPayment(data);
+  const payment = new PaymentModel(data);
+  await payment.save();
+  return payment;
 }
 
-export function getPayment(id: number) {
-  const payment = findPaymentById(id);
+export async function getPayment(id: string) {
+  const payment = await PaymentModel.findById(id);
   if (!payment) throw new Error("Payment not found");
   return payment;
 }
 
-export function getUserPayments(userId: number) {
-  return findPaymentsByUserId(userId);
+export async function getUserPayments(userId: string) {
+  return await PaymentModel.find({ userId });
 }
 
-export function sendPaymentSwift(id: number, userId: number) {
-  const payment = findPaymentById(id);
+export async function sendPaymentSwift(id: string, userId: string) {
+  const payment = await PaymentModel.findById(id);
   if (!payment) throw new Error("Payment not found");
-  if (payment.userId !== userId) throw new Error("Forbidden");
+  if (payment.userId.toString() !== userId.toString())
+    throw new Error("Forbidden");
   if (payment.provider !== "SWIFT") throw new Error("Unsupported provider");
 
-  const reference = `SWIFT-${payment.id}-${Date.now()}`;
+  const reference = `SWIFT-${payment._id}-${Date.now()}`;
   return {
-    id: payment.id,
+    id: payment._id,
     provider: payment.provider,
     status: "sent" as const,
     reference,

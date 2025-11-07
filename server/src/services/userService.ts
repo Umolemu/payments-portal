@@ -1,27 +1,26 @@
-import { users, addUser, findUserByEmail } from "../db/usersDb.js";
 import bcrypt from "bcrypt";
-import { saltRounds } from "../constants/constants.js";
-import type { ProtectedUser, User, UserDTO } from "../types/user.js";
+import { UserModel, type IUser } from "../models/usermodel.js";
+import type { ProtectedUser, UserDTO } from "../types/user.js";
 import type { role } from "../types/role.js";
+import { saltRounds } from "../constants/constants.js";
+import { Types } from "mongoose";
 
-// Strip sensitive fields
-// Non-null transformer for arrays and safe conversion for single values
-const toPublicNonNull = (user: User): ProtectedUser => {
-  const { password, ...rest } = user;
-  return rest;
+// Convert DB user → safe user (no password)
+const toPublic = (user: IUser): ProtectedUser => {
+  const { _id, name, email, role, createdAt, updatedAt } = user;
+  return { _id: Types.ObjectId, name, email, role, createdAt, updatedAt: updatedAt ?? createdAt };
 };
 
-const toPublic = (user: User | null | undefined): ProtectedUser | null =>
-  user ? toPublicNonNull(user) : null;
+// --- CRUD Operations ---
 
 export async function getAllUsers(): Promise<ProtectedUser[]> {
-  return users.map(toPublicNonNull);
+  const users = await UserModel.find().select("-password");
+  return users.map(toPublic);
 }
 
-export async function getUserByEmail(
-  email: string
-): Promise<ProtectedUser | null> {
-  return toPublic(findUserByEmail(email));
+export async function getUserByEmail(email: string): Promise<ProtectedUser | null> {
+  const user = await UserModel.findOne({ email });
+  return user ? toPublic(user) : null;
 }
 
 export async function createUser({
@@ -30,38 +29,30 @@ export async function createUser({
   password,
   role,
 }: UserDTO): Promise<ProtectedUser> {
-  const existing = findUserByEmail(email);
-
+  const existing = await UserModel.findOne({ email });
   if (existing) {
     throw new Error("Email already exists");
   }
 
-  const hashed = await bcrypt.hash(password, saltRounds);
-  const payload: {
-    name: string;
-    email: string;
-    password: string;
-    role?: role;
-  } = {
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+  const newUser = new UserModel({
     name,
     email,
-    password: hashed,
-  };
-  if (role !== undefined) payload.role = role as role;
-  const saved = addUser(payload);
+    password: hashedPassword,
+    role: role ?? "user",
+  });
 
-  return toPublicNonNull(saved);
+  const saved = await newUser.save();
+  return toPublic(saved);
 }
 
 export async function verifyUserCredentials(
   email: string,
   plainPassword: string
 ): Promise<ProtectedUser | null> {
-  const user = findUserByEmail(email);
-
-  if (!user) {
-    return null;
-  }
+  const user = await UserModel.findOne({ email });
+  if (!user) return null;
 
   const match = await bcrypt.compare(plainPassword, user.password);
   return match ? toPublic(user) : null;

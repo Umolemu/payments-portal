@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 export interface IPayment extends Document {
-  userId: Types.ObjectId; // reference to User document
+  userId: Types.ObjectId; // Reference to User document
   amount: number;
   currency: string;
   provider: "SWIFT";
@@ -13,15 +13,28 @@ export interface IPayment extends Document {
 
 const PaymentSchema = new Schema<IPayment>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     amount: { type: Number, required: true },
     currency: { type: String, required: true },
-    provider: { type: String, enum: ["SWIFT"], required: true },
+    provider: {
+      type: String,
+      enum: ["SWIFT"],
+      required: true,
+    },
     recipientName: { type: String, required: true },
     recipientAccount: { type: String, required: true },
     recipientSwift: { type: String, required: true },
   },
-  { timestamps: { createdAt: true, updatedAt: false } }
+  {
+    timestamps: { createdAt: true, updatedAt: false },
+  }
 );
 
-export const PaymentModel = mongoose.model<IPayment>("Payment", PaymentSchema);
+export const PaymentModel = mongoose.model<IPayment>(
+  "Payment",
+  PaymentSchema
+);
