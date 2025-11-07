@@ -25,7 +25,7 @@ router.get("/payments/:id", authMiddleware, getPaymentController);
 router.post(
   "/paymments/send-payment/:id",
   authMiddleware,
-  param("id").isInt({ min: 1 }),
+  param("id").isMongoId().withMessage("Invalid payment ID format"),
   validateRequest,
   sendPaymentSwiftController
 );
