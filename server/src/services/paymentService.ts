@@ -4,7 +4,14 @@ import type { IPayment } from "../models/paymentmodel.js";
 // Validation regex (as before)
 const SAFE_TEXT = /^[a-zA-Z0-9\s.,'-]{1,100}$/;
 
-export function validatePaymentInput(input: Partial<IPayment>) {
+export function validatePaymentInput(input: {
+  amount?: number;
+  currency?: string;
+  provider?: string;
+  recipientName?: string;
+  recipientAccount?: string;
+  recipientSwift?: string;
+}) {
   if (typeof input.amount !== "number" || input.amount <= 0) {
     throw new Error("Invalid amount");
   }
@@ -27,7 +34,15 @@ export function validatePaymentInput(input: Partial<IPayment>) {
 
 // --- MongoDB operations ---
 
-export async function addPayment(data: Omit<IPayment, "id" | "createdAt">) {
+export async function addPayment(data: {
+  userId: string;
+  amount: number;
+  currency: string;
+  provider: "SWIFT";
+  recipientName: string;
+  recipientAccount: string;
+  recipientSwift: string;
+}) {
   validatePaymentInput(data);
   const payment = new PaymentModel(data);
   await payment.save();

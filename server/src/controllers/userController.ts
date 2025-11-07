@@ -13,7 +13,7 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined in environment variables");
-};
+}
 const ACCESS_TOKEN_EXPIRES_IN: Exclude<SignOptions["expiresIn"], undefined> =
   (process.env.ACCESS_TOKEN_EXPIRES_IN as Exclude<
     SignOptions["expiresIn"],
@@ -82,7 +82,7 @@ export async function loginController(req: Request, res: Response) {
 
     // Generate JWT payload (avoid sensitive info)
     const payload = {
-      sub: user.id,
+      sub: user._id, // Use _id from ProtectedUser
       email: user.email,
       role: user.role || "user",
     };
@@ -106,6 +106,7 @@ export async function loginController(req: Request, res: Response) {
     res.json({
       message: "Login successful",
       user: safeUser,
+      token, // Include token for cross-origin usage
     });
   } catch (err: unknown) {
     console.error(err);

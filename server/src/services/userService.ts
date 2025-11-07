@@ -7,8 +7,15 @@ import { Types } from "mongoose";
 
 // Convert DB user → safe user (no password)
 const toPublic = (user: IUser): ProtectedUser => {
-  const { _id, name, email, role, createdAt, updatedAt } = user;
-  return { _id: user._id.toString() , name, email, role, createdAt, updatedAt: updatedAt ?? createdAt };
+  const { name, email, role, createdAt, updatedAt } = user;
+  return {
+    _id: (user._id as Types.ObjectId).toString(),
+    name,
+    email,
+    role,
+    createdAt,
+    updatedAt: updatedAt ?? createdAt,
+  };
 };
 
 // --- CRUD Operations ---
@@ -18,7 +25,9 @@ export async function getAllUsers(): Promise<ProtectedUser[]> {
   return users.map(toPublic);
 }
 
-export async function getUserByEmail(email: string): Promise<ProtectedUser | null> {
+export async function getUserByEmail(
+  email: string
+): Promise<ProtectedUser | null> {
   const user = await UserModel.findOne({ email });
   return user ? toPublic(user) : null;
 }
