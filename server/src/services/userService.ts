@@ -8,7 +8,7 @@ import { Types } from "mongoose";
 // Convert DB user → safe user (no password)
 const toPublic = (user: IUser): ProtectedUser => {
   const { _id, name, email, role, createdAt, updatedAt } = user;
-  return { _id: Types.ObjectId, name, email, role, createdAt, updatedAt: updatedAt ?? createdAt };
+  return { _id: user._id.toString() , name, email, role, createdAt, updatedAt: updatedAt ?? createdAt };
 };
 
 // --- CRUD Operations ---

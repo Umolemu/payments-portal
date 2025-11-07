@@ -1,3 +1,4 @@
+import {Document,Types} from "mongoose";
 // types/role.ts
 export type role = "admin" | "user";
 
@@ -9,8 +10,8 @@ export interface UserDTO {
 }
 
 // The full user as stored in MongoDB (with _id)
-export interface IUser {
-  _id: string; // from MongoDB
+export interface IUser extends Document{
+  _id: Types.ObjectId; // from MongoDB
   name: string;
   email: string;
   password: string;
